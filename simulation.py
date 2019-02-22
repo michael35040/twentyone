@@ -75,7 +75,7 @@ import time
 
 import numpy as np
 import scipy.stats as stats
-import pylab as pl
+#import pylab as pl
 
 #START IMPORTER
 #from importer.StrategyImporter import StrategyImporter
@@ -164,23 +164,23 @@ COUNTING_RULES = {
     'SIZE_OF_BET': 100.0, #STANDARD SIZE OF BET REGARDLESS OF COUNT, can be any integer, is multiplied by bet_spread
     'SHOE_PENETRATION_REMAINING': 0.25, #reshuffle when the shoe gets to this amount -- reshuffle after 75% (minus 1.0 from the set number) of all cards are played    
     #WHETHER TO ADJUST BETS BASED ON COUNT
-    'COUNTING_ADJ_BETS': True, #True/False - Adjust the bets based on counting
+    'COUNTING_ADJ_BETS': False, #True/False - Adjust the bets based on counting
     #TOP VALUES (WHEN COUNT IS VERY HIGH)
-    'TRUE_COUNT_TOP': 3, #Institute BET_SPREAD if true count >= this number - default was 6
-    'TOP_BET_SPREAD': 6.0, #Bet n-times (if set to 20.0, 20-times) the money if the count is player-favorable
+    'TRUE_COUNT_TOP': 10, #Institute BET_SPREAD if true count >= this number - default was 6
+    'TOP_BET_SPREAD': 20.0, #Bet n-times (if set to 20.0, 20-times) the money if the count is player-favorable
     #MID VALUES (WHEN COUNT IS HIGH)
-    'TRUE_COUNT_MID': 1, #Institute BET_SPREAD if true count >= this number - default was 6
-    'MID_BET_SPREAD': 2.0, #Bet n-times (if set to 20.0, 20-times) the money if the count is player-favorable   
+    'TRUE_COUNT_MID': 3, #Institute BET_SPREAD if true count >= this number - default was 6
+    'MID_BET_SPREAD': 10.0, #Bet n-times (if set to 20.0, 20-times) the money if the count is player-favorable   
         }
 
 BLACKJACK_RULES = {
     'SHOE_SIZE': 6, #Default 6 -- number of decks in shoe (6 starts us at -0.54% +0.07 +0.14 == -0.33%)
-    'MAX_HANDS': 4, #Default 4 -- ('2' for No resplits lowers EV -0.04% -- MAX_HANDS of 4 allows 3 resplits
+    'MAX_HANDS': 3, #Default 4 -- ('2' for No resplits lowers EV -0.04% -- MAX_HANDS of 4 allows 3 resplits
     'BLACKJACK_PAYOUT': 1.5, #Default 1.5 (6:5 LOWERS PLAYERS EV -1.71, 1:1 LOWERS -2.26, and 2:1 raises +2.26) blackjack payout is 1.5 (3:2) or 1.2 (6:5)
     'triple7': False,  # Count 3x7 as a blackjack
     'DEALER_HITS_SOFT': False, #Default=False (True lowers EV -0.21% for the player) True/Hit H17 - False/Stand S17 -- if dealer should HIT soft 17, or False if dealer should STAND on soft 17
     'DOUBLE_AFTER_SPLIT': False, #Default=False (True raises EV +0.14% for the player) DAS 
-    'LATE_SURRENDER': False, #Default False -- Late (True) raises player EV +0.08 -- SURRENDER RULE - Late or No Surrender #True still checks for BJ before player can surrender
+    'LATE_SURRENDER': True, #Default False -- Late (True) raises player EV +0.08 -- SURRENDER RULE - Late or No Surrender #True still checks for BJ before player can surrender
     'RESPLIT_ACES': False, #Default False -- True raises EV +0.07% -- RSA - Allows Resplitting Aces
     'HIT_SPLIT_ACES': False, #Default False -- True raises EV +0.14% (forces DRAW ACES)- True Allows split aces to be hit again. 
 }
@@ -733,9 +733,7 @@ class Game(object):
     def __init__(self):
         self.shoe = Shoe(BLACKJACK_RULES['SHOE_SIZE'])
 
-        self.stake = COUNTING_RULES['SIZE_OF_BET'] #original bet
         self.win = 0.0 #hand wins
-
         self.bet = 0.0 #total stake modified by num hands, double/split/etc.
         self.money = 0.0 #sum of wins by hand
 
@@ -831,18 +829,14 @@ class Game(object):
             # DETERMINE BET FOR THE ROUND
             #
             #
+            self.stake = COUNTING_RULES['SIZE_OF_BET']
             if COUNTING_RULES['COUNTING_ADJ_BETS'] == True:
                 #if counting moderately favorable - bet mid
                 if self.shoe.truecount() >= COUNTING_RULES['TRUE_COUNT_MID']: 
                     self.stake = COUNTING_RULES['SIZE_OF_BET'] * COUNTING_RULES['MID_BET_SPREAD']
                 #if counting very favorable - bet high
-                elif self.shoe.truecount() >= COUNTING_RULES['TRUE_COUNT_TOP']: 
+                if self.shoe.truecount() >= COUNTING_RULES['TRUE_COUNT_TOP']: 
                     self.stake = COUNTING_RULES['SIZE_OF_BET'] * COUNTING_RULES['TOP_BET_SPREAD']
-                #if counting is not favorable - bet low/min
-                else:
-                    self.stake = COUNTING_RULES['SIZE_OF_BET']
-            else:
-                self.stake = COUNTING_RULES['SIZE_OF_BET']
         else:
             raw_stake = input("BET (%s): " % self.stake)
             if raw_stake != "":
